@@ -1,0 +1,8 @@
+/checkpoints_reg
+/checkpoints_segModel
+/data
+/wandb
+/seg_checkpoint
+/__pycache__
+/checkpoints*
+/runs

@@ -1,0 +1,16 @@
+imageType:
+  Original: {}
+  Wavelet: {}
+
+featureClass:
+  firstorder: []
+  shape2D: []
+  glcm: []
+  glrlm: []
+  glszm: []
+
+setting:
+  binWidth: 25
+  force2D: true
+  force2Ddimension: 0
+  normalize: true
