@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 SEED = 42
 np.random.seed(SEED); torch.manual_seed(SEED); random.seed(SEED)
 
-max_epochs = 300
+max_epochs = 1000
 batch_size = 12
 num_classes = 8
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -169,6 +169,16 @@ for epoch in tqdm(range(max_epochs), leave=False):
 # y_true, y_probs = model.predict_on_loader(val_loader)
 # roc_auc_dict, roc_path = plot_roc_curve_multilabel(y_true, y_probs, num_classes)
 # wandb.log({"Final ROC Curve (Val)": wandb.Image(roc_path)})
+
+# Create a directory for saving checkpoints if it doesn't exist
+checkpoint_dir = f"checkpoints/fusion_model_mmotu/{commit_log}"
+os.makedirs(checkpoint_dir, exist_ok=True)
+checkpoint = {
+    'model_state_dict': best_model_state,
+    'best_val_auc': best_val_auc
+}
+torch.save(checkpoint, os.path.join(checkpoint_dir, 'best_model.pth'))
+
 
 # run.finish()
 # --- Final Evaluation After Loading Best Model ---

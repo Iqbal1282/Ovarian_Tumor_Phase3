@@ -172,6 +172,16 @@ for epoch in tqdm(range(max_epochs), leave=False):
 # roc_auc_dict, roc_path = plot_roc_curve_multilabel(y_true, y_probs, num_classes)
 # wandb.log({"Final ROC Curve (Val)": wandb.Image(roc_path)})
 
+# Create a directory for saving checkpoints if it doesn't exist
+checkpoint_dir = f"checkpoints/fusion_model_mmotu/{commit_log}"
+os.makedirs(checkpoint_dir, exist_ok=True)
+checkpoint = {
+    'model_state_dict': best_model_state,
+    'best_val_auc': best_val_auc
+}
+torch.save(checkpoint, os.path.join(checkpoint_dir, 'best_model.pth'))
+
+
 # run.finish()
 # --- Final Evaluation After Loading Best Model ---
 model.load_state_dict(best_model_state)
