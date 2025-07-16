@@ -20,7 +20,7 @@ SEED = 42
 np.random.seed(SEED); torch.manual_seed(SEED); random.seed(SEED)
 
 max_epochs = 2000
-batch_size = 16
+batch_size = 12
 num_classes = 8
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
