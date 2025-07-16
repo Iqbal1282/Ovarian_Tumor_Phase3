@@ -19,8 +19,8 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 SEED = 42
 np.random.seed(SEED); torch.manual_seed(SEED); random.seed(SEED)
 
-max_epochs = 1000
-batch_size = 12
+max_epochs = 2000
+batch_size = 16
 num_classes = 8
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -171,7 +171,7 @@ for epoch in tqdm(range(max_epochs), leave=False):
 # wandb.log({"Final ROC Curve (Val)": wandb.Image(roc_path)})
 
 # Create a directory for saving checkpoints if it doesn't exist
-checkpoint_dir = f"checkpoints/fusion_model_mmotu/{commit_log}"
+checkpoint_dir = f"checkpoints/imagenet_model_mmotu/{commit_log}"
 os.makedirs(checkpoint_dir, exist_ok=True)
 checkpoint = {
     'model_state_dict': best_model_state,
