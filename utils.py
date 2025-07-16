@@ -4,6 +4,12 @@ import os
 import numpy as np
 import wandb
 
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc
+import os
+
+
 def plot_multilabel_roc_curve(y_true, y_probs, class_names=None, fold_idx=None, wandb_logger=None):
     n_classes = y_true.shape[1]
     fpr_dict = {}
@@ -90,6 +96,54 @@ def plot_roc_curve_multilabel(y_true, y_probs, num_classes):
     path = "plots/roc_curve_validation.png"
     plt.savefig(path)
     plt.close()
+    return roc_auc, path
+
+
+
+def plot_roc_curve_multilabel(y_true, y_probs, num_classes):
+    fpr, tpr, roc_auc = {}, {}, {}
+
+    # Store all interpolated TPRs for averaging
+    all_fpr = np.linspace(0, 1, 100)
+    interp_tprs = []
+
+    for i in range(num_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_true[:, i], y_probs[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+        # Interpolate TPR to a common FPR basis for mean ROC
+        interp_tpr = np.interp(all_fpr, fpr[i], tpr[i])
+        interp_tpr[0] = 0.0  # Ensure the start is 0
+        interp_tprs.append(interp_tpr)
+
+    # Calculate mean TPR and AUC
+    mean_tpr = np.mean(interp_tprs, axis=0)
+    mean_tpr[-1] = 1.0  # Ensure the end is 1
+    mean_auc = auc(all_fpr, mean_tpr)
+
+    # Plot individual class ROC curves
+    plt.figure()
+    for i in range(num_classes):
+        plt.plot(fpr[i], tpr[i], label=f'Class {i} (AUC = {roc_auc[i]:.2f})')
+
+    # Plot mean ROC curve
+    plt.plot(all_fpr, mean_tpr, color='navy', linestyle='--', linewidth=2,
+             label=f'Mean ROC (AUC = {mean_auc:.2f})')
+
+    # Plot random line
+    plt.plot([0, 1], [0, 1], 'k--')
+
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC Curve - Validation')
+    plt.legend(loc='lower right')
+
+    # Save plot
+    os.makedirs("plots", exist_ok=True)
+    path = "plots/roc_curve_validation.png"
+    plt.savefig(path)
+    plt.close()
+
     return roc_auc, path
 
 def compute_weighted_accuracy(y_probs, y_true, threshold=0.5):
