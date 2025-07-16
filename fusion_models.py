@@ -124,7 +124,7 @@ class MultiModalCancerClassifierWithAttention(nn.Module):
             x = imgs[i]
 
             # Modality dropout (like CoAtNet)
-            if self.training and random.random() < self.dropout_prob:
+            if self.training and random.random() < self.dropout_prob and i != 0:
                 # Replace with zero vector
                 fused_feats.append(torch.zeros(B, self.projs[i].out_features, device=device))
                 continue
@@ -253,7 +253,7 @@ class MultiClassificationTorch(nn.Module):
         for p in self.sdf_model.parameters(): 
             p.requires_grad = False
 
-        self.fusion_model = MultiModalCancerClassifierWithAttention(out_dim=num_classes)
+        self.fusion_model = MultiModalCancerClassifierWithAttention(out_dim=num_classes, backbone_name ="resnet50")
 
         # Losses for multi-label (use BCE with logits)
         self.loss_fn = nn.BCEWithLogitsLoss()
@@ -267,8 +267,8 @@ class MultiClassificationTorch(nn.Module):
         x_sdf = self.sdf_model(x.mean(dim = 1, keepdim = True))
         x_sdf = self.normalize_sdf(x_sdf)
 
-        lower_thresh = torch.empty(1).uniform_(-0.45, -0.15).item()
-        upper_thresh = torch.empty(1).uniform_(0.35, 0.65).item()
+        lower_thresh = torch.empty(1).uniform_(-0.2, -0.3).item()
+        upper_thresh = torch.empty(1).uniform_(0.4, 0.45).item()
         center_thresh = torch.empty(1).uniform_(0.1, 0.25).item()
 
         boundary_mask = (x_sdf < upper_thresh) & (x_sdf > lower_thresh)
