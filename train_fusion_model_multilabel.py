@@ -60,8 +60,8 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 # Model
 model = MultiClassificationTorch(input_dim= 64, 
                                 num_classes= 8,  
-                                encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt",
-                                sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84", 
+                                encoder_weight_path = r"./checkpoints/normtverskyloss_binary_segmentation/a56e77a/best-checkpoint-epoch=77-validation/loss=0.2544.ckpt",
+                                sdf_model_path= r"./checkpoints/deeplabv3_sdf_randomcrop/model_20250711_201243/epoch_84", 
                                 radiomics= False).to(device)
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
