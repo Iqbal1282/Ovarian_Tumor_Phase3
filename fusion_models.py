@@ -253,7 +253,7 @@ class MultiClassificationTorch(nn.Module):
         for p in self.sdf_model.parameters(): 
             p.requires_grad = False
 
-        self.fusion_model = MultiModalCancerClassifierWithAttention(out_dim=num_classes, backbone_name ="resnet50")
+        self.fusion_model = MultiModalCancerClassifierWithAttention(out_dim=num_classes, backbone_name ="resnet18")
 
         # Losses for multi-label (use BCE with logits)
         self.loss_fn = nn.BCEWithLogitsLoss()
