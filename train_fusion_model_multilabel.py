@@ -60,8 +60,8 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 # Model
 model = MultiClassificationTorch(input_dim= 64, 
                                 num_classes= 8,  
-                                encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt",
-                                sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84", 
+                                encoder_weight_path = r"checkpoints/normtverskyloss_binary_segmentation/a56e77a/best-checkpoint-epoch=77-validation/loss=0.2544.ckpt",
+                                sdf_model_path= r"checkpoints/deeplabv3_sdf_randomcrop/model_20250711_201243/epoch_84", 
                                 radiomics= False).to(device)
 
 # optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
@@ -70,7 +70,7 @@ model = MultiClassificationTorch(input_dim= 64,
 # accuracy_metric = MultilabelAccuracy(num_labels=num_classes).to(device)
 # auc_metric = MultilabelAUROC(num_labels=num_classes).to(device)
 
-optimizer = torch.optim.SGD(model.parameters(),  lr=0.01, momentum=0.9, weight_decay=0.0005)
+optimizer = torch.optim.SGD(model.parameters(),  lr=0.1, momentum=0.9, weight_decay=0.0005)
 scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-5)
 
 accuracy_metric = MultilabelAccuracy(num_labels=8, average=None).to(device)
