@@ -139,9 +139,20 @@ class MultiModalCancerClassifierMultiStage(nn.Module):
         # Skip connection projection
         self.skip_project = nn.Linear(self.num_stages * fusion_dim, fusion_dim)
 
-        # Classifier
+        # # Classifier
+        # self.classifier = nn.Sequential(
+        #     nn.Linear(fusion_dim, 128),
+        #     nn.ReLU(),
+        #     nn.Dropout(0.3),
+        #     nn.Linear(128, out_dim)
+        # )
+
+        # Deeper classifier for richer features
         self.classifier = nn.Sequential(
-            nn.Linear(fusion_dim, 128),
+            nn.Linear(fusion_dim, 256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 128),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.Linear(128, out_dim)
