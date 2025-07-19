@@ -110,7 +110,7 @@ for epoch in tqdm(range(max_epochs), leave=False):
             if len(batch) == 2:
                 x, y = batch
                 x, y = x.to(device), y.to(device)
-                scores = model(x)
+                scores, _ = model(x)
             else:
                 x, x2, y = batch
                 x, x2, y = x.to(device), x2.to(device), y.to(device)

@@ -214,7 +214,7 @@ class MultiStageProgressiveFusionModel(nn.Module):
 
         if self.use_auxiliary_heads:
             return out, aux_outputs  # main + stage-wise outputs
-        return out
+        return out, False 
 
     
 
@@ -232,7 +232,7 @@ class MultiClassificationTorch(nn.Module):
         for p in self.sdf_model.parameters(): 
             p.requires_grad = False
 
-        self.fusion_model = MultiStageProgressiveFusionModel(out_dim=num_classes, backbone_name= "resnet18", dropout_prob= 0)
+        self.fusion_model = MultiStageProgressiveFusionModel(out_dim=num_classes, backbone_name= "resnet18", dropout_prob= 0, use_auxiliary_heads=False)
 
         # Losses for multi-label (use BCE with logits)
         #self.loss_fn = nn.BCEWithLogitsLoss()
@@ -271,8 +271,8 @@ class MultiClassificationTorch(nn.Module):
 
             main_out, aux_outs = self.forward(x)
             loss = self.loss_fn(main_out, y)
-            for aux_out in aux_outs:
-                loss += self.loss_fn(aux_out, y) * 0.1 #aux_loss_weight
+            # for aux_out in aux_outs:
+            #     loss += self.loss_fn(aux_out, y) * 0.1 #aux_loss_weight
 
         return loss
 
