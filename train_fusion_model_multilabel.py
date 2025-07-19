@@ -8,8 +8,8 @@ import os
 import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 from torch.utils.data import DataLoader
-from fusion_models_multistage import MultiClassificationTorch
-from dataset_baseline import  MMotu_Classificaiton_Dataset
+from fusion_models_multistage3 import MultiClassificationTorch
+from dataset import  MMotu_Classificaiton_Dataset
 from utils import plot_roc_curve_multilabel, compute_weighted_accuracy
 from tqdm import tqdm
 from torchmetrics.classification import MultilabelAccuracy, MultilabelAUROC
@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 SEED = 42
 np.random.seed(SEED); torch.manual_seed(SEED); random.seed(SEED)
 
-max_epochs = 2000
+max_epochs = 200
 batch_size = 12
 num_classes = 8
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,12 +64,12 @@ model = MultiClassificationTorch(input_dim= 64,
                                 sdf_model_path= r"./checkpoints/deeplabv3_sdf_randomcrop/model_20250711_201243/epoch_84", 
                                 radiomics= False).to(device)
 
-# optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
-# scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-5)
+optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
+scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-5)
 
 #optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
-optimizer = torch.optim.SGD(model.parameters(),  lr=0.01, momentum=0.9, weight_decay=0.0005)
-scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-5)
+# optimizer = torch.optim.SGD(model.parameters(),  lr=0.01, momentum=0.9, weight_decay=0.0005)
+# scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-5)
 
 
 # accuracy_metric = MultilabelAccuracy(num_labels=num_classes).to(device)
