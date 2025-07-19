@@ -19,7 +19,7 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 SEED = 42
 np.random.seed(SEED); torch.manual_seed(SEED); random.seed(SEED)
 
-max_epochs = 200
+max_epochs = 400
 batch_size = 12
 num_classes = 8
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
