@@ -109,6 +109,56 @@ class CrossAttention(nn.Module):
         # x: (B, N, D)
         out, _ = self.attn(x, x, x)
         return out.mean(dim=1)  # reduce across modalities
+    
+class SEClassifier(nn.Module):
+    def __init__(self, input_dim, hidden_dim, num_classes, reduction=16):
+        super().__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+
+        # Squeeze-and-Excitation
+        self.se = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // reduction),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // reduction, hidden_dim),
+            nn.Sigmoid()
+        )
+
+        self.fc2 = nn.Linear(hidden_dim, num_classes)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        se_weight = self.se(x)
+        x = x * se_weight  # Channel-wise reweighting
+        x = self.dropout(x)
+        x = self.fc2(x)
+        return x
+
+
+class TransformerFFNClassifier(nn.Module):
+    def __init__(self, input_dim, hidden_dim, num_classes):
+        super().__init__()
+        self.norm1 = nn.LayerNorm(input_dim)
+        self.linear1 = nn.Linear(input_dim, hidden_dim)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+        self.linear2 = nn.Linear(hidden_dim, input_dim)
+        self.norm2 = nn.LayerNorm(input_dim)
+        self.final_classifier = nn.Linear(input_dim, num_classes)
+
+    def forward(self, x):
+        residual = x
+        x = self.norm1(x)
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.linear2(x)
+        x = x + residual  # Add & Norm
+        x = self.norm2(x)
+        return self.final_classifier(x)
+
 
 # Main model
 class MultiStageProgressiveFusionModel(nn.Module):
@@ -120,7 +170,7 @@ class MultiStageProgressiveFusionModel(nn.Module):
                  num_modalities=3,
                  fusion_start_stage=2,
                  fusion_block_type= 'crossattention', # 'attention',  # or
-                 use_auxiliary_heads=True):
+                 use_auxiliary_heads=True, classifier_type = "se"):
         super().__init__()
 
         self.num_modalities = num_modalities
@@ -160,14 +210,21 @@ class MultiStageProgressiveFusionModel(nn.Module):
                 for i in range(self.num_stages)
             ])
 
-        # Final classifier
-        self.classifier = nn.Sequential(
-            nn.Linear(fusion_dim * (self.num_stages - fusion_start_stage), 256),
+        # # Final classifier
+
+        hidden_dim = 256
+
+        if classifier_type == 'se':
+            self.classifier = SEClassifier(fusion_dim * (self.num_stages - fusion_start_stage), hidden_dim, out_dim)
+        elif classifier_type == 'transformer':
+            self.classifier = TransformerFFNClassifier(fusion_dim * (self.num_stages - fusion_start_stage), hidden_dim, out_dim)
+        else:
+            self.classifier = nn.Sequential(
+            nn.Linear(fusion_dim * (self.num_stages - fusion_start_stage), hidden_dim),
             nn.ReLU(),
             nn.Dropout(dropout_prob),
-            nn.Linear(256, out_dim)
+            nn.Linear(hidden_dim, out_dim)
         )
-
     def forward(self, imgs: List[torch.Tensor]):
         B = imgs[0].shape[0]
         device = imgs[0].device
@@ -214,7 +271,7 @@ class MultiStageProgressiveFusionModel(nn.Module):
 
         if self.use_auxiliary_heads:
             return out, aux_outputs  # main + stage-wise outputs
-        return out, False 
+        return out
 
     
 
@@ -232,7 +289,7 @@ class MultiClassificationTorch(nn.Module):
         for p in self.sdf_model.parameters(): 
             p.requires_grad = False
 
-        self.fusion_model = MultiStageProgressiveFusionModel(out_dim=num_classes, backbone_name= "resnet18", dropout_prob= 0, use_auxiliary_heads=False)
+        self.fusion_model = MultiStageProgressiveFusionModel(out_dim=num_classes, backbone_name= "resnet50", dropout_prob= 0)
 
         # Losses for multi-label (use BCE with logits)
         #self.loss_fn = nn.BCEWithLogitsLoss()
@@ -271,8 +328,8 @@ class MultiClassificationTorch(nn.Module):
 
             main_out, aux_outs = self.forward(x)
             loss = self.loss_fn(main_out, y)
-            # for aux_out in aux_outs:
-            #     loss += self.loss_fn(aux_out, y) * 0.1 #aux_loss_weight
+            for aux_out in aux_outs:
+                loss += self.loss_fn(aux_out, y) * 0.1 #aux_loss_weight
 
         return loss
 
