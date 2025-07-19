@@ -289,7 +289,7 @@ class MultiClassificationTorch(nn.Module):
         for p in self.sdf_model.parameters(): 
             p.requires_grad = False
 
-        self.fusion_model = MultiStageProgressiveFusionModel(out_dim=num_classes, backbone_name= "resnet50",fusion_start_stage = 4, dropout_prob= 0)
+        self.fusion_model = MultiStageProgressiveFusionModel(out_dim=num_classes, backbone_name= "resnet18",fusion_start_stage = 3, dropout_prob= 0)
 
         # Losses for multi-label (use BCE with logits)
         #self.loss_fn = nn.BCEWithLogitsLoss()
