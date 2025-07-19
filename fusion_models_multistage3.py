@@ -170,7 +170,7 @@ class MultiStageProgressiveFusionModel(nn.Module):
                  num_modalities=3,
                  fusion_start_stage=2,
                  fusion_block_type= 'crossattention', # 'attention',  # or
-                 use_auxiliary_heads=True, classifier_type = "se"):
+                 use_auxiliary_heads=True, classifier_type = "transformer"):
         super().__init__()
 
         self.num_modalities = num_modalities
