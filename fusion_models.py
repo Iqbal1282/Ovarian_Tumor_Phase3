@@ -131,14 +131,31 @@ class MultiModalCancerClassifierWithAttention(nn.Module):
         self.dropout_prob = dropout_prob
         self.use_layernorm = use_layernorm
 
-        # Create modality-specific backbones
-        self.backbones = nn.ModuleList([
-            timm.create_model(backbone_name, pretrained=True, num_classes=0)
-            for _ in range(self.num_modalities)
-        ])
-        self.backbone_out_dim = self.backbones[0].num_features
+        # best backbone with .94 auc 
+        best_backbone_checkpoint_path = "checkpoints/imagenet_model_mmotu/1548ce4/best_model.pth"
+
+
+        # # Create modality-specific backbones
+        # self.backbones = nn.ModuleList([
+        #     timm.create_model(backbone_name, pretrained=True, num_classes=out_dim)
+        #     for _ in range(self.num_modalities)
+        # ])
+        
+
+        # Initialize modality-specific backbones
+        self.backbones = nn.ModuleList()
+        for i in range(self.num_modalities):
+            backbone = timm.create_model(backbone_name, pretrained=False, num_classes=out_dim)
+            checkpoint_path = best_backbone_checkpoint_path
+            self._load_backbone_weights(backbone, checkpoint_path)
+            if i == 0:
+                self._freeze_backbone(backbone)  # Freeze backbone 1
+            self.backbones.append(backbone)
 
         # Set a sensible default fusion dim
+
+        self.backbone_out_dim = out_dim #self.backbones[0].num_features
+
         if fusion_dim is None:
             fusion_dim = min(512, self.backbone_out_dim)  # Keep dimension smaller for fusion stability
 
@@ -165,6 +182,21 @@ class MultiModalCancerClassifierWithAttention(nn.Module):
             nn.Dropout(0.3),
             nn.Linear(128, out_dim)
         )
+    def _load_backbone_weights(self, model, checkpoint_path):
+        try:
+            state_dict = torch.load(checkpoint_path, map_location='cpu')
+            if 'state_dict' in state_dict:
+                state_dict = state_dict['state_dict']  # For checkpoints saved with torch.save({"state_dict": model.state_dict()})
+            # Remove any 'module.' prefix if the model was saved using DataParallel
+            new_state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+            model.load_state_dict(new_state_dict, strict=False)
+            print(f"[INFO] Loaded checkpoint from {checkpoint_path}")
+        except Exception as e:
+            print(f"[ERROR] Failed to load checkpoint from {checkpoint_path}: {e}")
+    def _freeze_backbone(self, model):
+        for param in model.parameters():
+            param.requires_grad = False
+        print("[INFO] Backbone 1 frozen (no gradient updates).")
 
     def forward(self, imgs):  # imgs: list of 3 tensors
         B = imgs[0].shape[0]
@@ -210,8 +242,8 @@ class MultiClassificationTorch(nn.Module):
         self.fusion_model = MultiModalCancerClassifierWithAttention(out_dim=num_classes, backbone_name= "resnet50", dropout_prob= 0)
 
         # Losses for multi-label (use BCE with logits)
-        self.loss_fn = nn.BCEWithLogitsLoss()
-        self.loss_fn2 = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([3.0] * num_classes))
+        #self.loss_fn = nn.BCEWithLogitsLoss()
+        self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.0] * num_classes))
 
     def normalize_sdf(self, sdf_image):
         sdf_image = (sdf_image - sdf_image.min()) / (sdf_image.max() - sdf_image.min() + 1e-8)
@@ -242,7 +274,7 @@ class MultiClassificationTorch(nn.Module):
             loss = self.loss_fn(score, y) + sum(self.loss_fn(t, y) for t in tails)
         else:
             score = self.forward(x)
-            loss = 0.5 * self.loss_fn(score, y) + 0.5 * self.loss_fn2(score, y)
+            loss = self.loss_fn(score, y) #+ 0.5 * self.loss_fn2(score, y)
 
         return loss
 
@@ -408,8 +440,8 @@ if __name__ == "__main__":
 
 
     model = MultiClassificationTorch(input_dim= 64, num_classes= 8,  
-                                 encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt", 
-                                 sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84",
+                                 encoder_weight_path = r"checkpoints/normtverskyloss_binary_segmentation/a56e77a/best-checkpoint-epoch=77-validation/loss=0.2544.ckpt", 
+                                 sdf_model_path= r"checkpoints/deeplabv3_sdf_randomcrop/model_20250711_201243/epoch_84",
                                  radiomics= False)
     
     #model = MultiClassificationTorch_Imagenet()
