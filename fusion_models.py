@@ -124,106 +124,197 @@ class AttentionFusion(nn.Module):
         return fused
 
 
-class MultiModalCancerClassifierWithAttention(nn.Module):
-    def __init__(self, out_dim=1, fusion_dim=None, backbone_name='resnet18', dropout_prob=0.0, use_layernorm=True):
+# class MultiModalCancerClassifierWithAttention(nn.Module):
+#     def __init__(self, out_dim=1, fusion_dim=None, backbone_name='resnet18', dropout_prob=0.0, use_layernorm=True):
+#         super().__init__()
+#         self.num_modalities = 3
+#         self.dropout_prob = dropout_prob
+#         self.use_layernorm = use_layernorm
+
+#         # best backbone with .94 auc 
+#         best_backbone_checkpoint_path = "checkpoints/imagenet_model_mmotu/1548ce4/best_model.pth"
+
+
+#         # # Create modality-specific backbones
+#         # self.backbones = nn.ModuleList([
+#         #     timm.create_model(backbone_name, pretrained=True, num_classes=out_dim)
+#         #     for _ in range(self.num_modalities)
+#         # ])
+        
+
+#         # Initialize modality-specific backbones
+#         self.backbones = nn.ModuleList()
+#         for i in range(self.num_modalities):
+#             backbone = timm.create_model(backbone_name, pretrained=False, num_classes=out_dim)
+#             checkpoint_path = best_backbone_checkpoint_path
+#             self._load_backbone_weights(backbone, checkpoint_path)
+#             if i == 0:
+#                 self._freeze_backbone(backbone)  # Freeze backbone 1
+#             self.backbones.append(backbone)
+
+#         # Set a sensible default fusion dim
+
+#         self.backbone_out_dim = out_dim #self.backbones[0].num_features
+
+#         if fusion_dim is None:
+#             fusion_dim = min(512, self.backbone_out_dim)  # Keep dimension smaller for fusion stability
+
+#         # Projection layers
+#         self.projs = nn.ModuleList([
+#             nn.Sequential(
+#                 nn.Linear(self.backbone_out_dim, fusion_dim),
+#                 nn.LayerNorm(fusion_dim) if use_layernorm else nn.Identity(),
+#                 nn.ReLU()
+#             )
+#             for _ in range(self.num_modalities)
+#         ])
+
+#         # Fusion attention
+#         self.attn_fusion = AttentionFusion(embed_dim=fusion_dim, num_modalities=self.num_modalities)
+
+#         # Deeper classifier for richer features
+#         self.classifier = nn.Sequential(
+#             nn.Linear(fusion_dim, 256),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(256, 128),
+#             nn.ReLU(),
+#             nn.Dropout(0.3),
+#             nn.Linear(128, out_dim)
+#         )
+#     def _load_backbone_weights(self, model, checkpoint_path):
+#         try:
+#             state_dict = torch.load(checkpoint_path, map_location='cpu')
+#             if 'state_dict' in state_dict:
+#                 state_dict = state_dict['state_dict']  # For checkpoints saved with torch.save({"state_dict": model.state_dict()})
+#             # Remove any 'module.' prefix if the model was saved using DataParallel
+#             new_state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+#             model.load_state_dict(new_state_dict, strict=False)
+#             print(f"[INFO] Loaded checkpoint from {checkpoint_path}")
+#         except Exception as e:
+#             print(f"[ERROR] Failed to load checkpoint from {checkpoint_path}: {e}")
+#     def _freeze_backbone(self, model):
+#         for param in model.parameters():
+#             param.requires_grad = False
+#         print("[INFO] Backbone 1 frozen (no gradient updates).")
+
+#     def forward(self, imgs):  # imgs: list of 3 tensors
+#         B = imgs[0].shape[0]
+#         device = imgs[0].device
+
+#         fused_feats = []
+#         for i in range(self.num_modalities):
+#             x = imgs[i]
+
+#             # Modality dropout
+#             if self.training and random.random() < self.dropout_prob and i != 0:
+#                 fused_feats.append(torch.zeros(B, self.projs[i][0].out_features, device=device))
+#                 continue
+
+#             # Convert grayscale to RGB
+#             if x.shape[1] == 1:
+#                 x = x.repeat(1, 3, 1, 1)
+
+#             feat = self.backbones[i](x)  # (B, backbone_out_dim)
+#             proj_feat = self.projs[i](feat)  # (B, fusion_dim)
+#             fused_feats.append(proj_feat)
+
+#         fused_stack = torch.stack(fused_feats, dim=1)  # (B, M, fusion_dim)
+#         fused_output = self.attn_fusion(fused_stack)   # (B, fusion_dim)
+#         out = self.classifier(fused_output)            # (B, out_dim)
+#         return out
+
+
+class MultiModalClassifierWithLogitFusion(nn.Module):
+    def __init__(self, out_dim=1, fusion_dim=64, backbone_name='resnet18', dropout_prob=0.1, use_layernorm=True):
         super().__init__()
         self.num_modalities = 3
         self.dropout_prob = dropout_prob
         self.use_layernorm = use_layernorm
 
-        # best backbone with .94 auc 
-        best_backbone_checkpoint_path = "checkpoints/imagenet_model_mmotu/1548ce4/best_model.pth"
+        # Assume 8-class classifier for each backbone
+        self.backbone_num_classes = 8
 
+        # Checkpoint paths per modality
+        self.checkpoints = [
+            "checkpoints/imagenet_model_mmotu/modality1/best_model.pth",
+            "checkpoints/imagenet_model_mmotu/modality2/best_model.pth",
+            "checkpoints/imagenet_model_mmotu/modality3/best_model.pth"
+        ]
 
-        # # Create modality-specific backbones
-        # self.backbones = nn.ModuleList([
-        #     timm.create_model(backbone_name, pretrained=True, num_classes=out_dim)
-        #     for _ in range(self.num_modalities)
-        # ])
-        
-
-        # Initialize modality-specific backbones
         self.backbones = nn.ModuleList()
         for i in range(self.num_modalities):
-            backbone = timm.create_model(backbone_name, pretrained=False, num_classes=out_dim)
-            checkpoint_path = best_backbone_checkpoint_path
-            self._load_backbone_weights(backbone, checkpoint_path)
+            backbone = timm.create_model(backbone_name, pretrained=False, num_classes=self.backbone_num_classes)
+            self._load_backbone_weights(backbone, self.checkpoints[i])
             if i == 0:
-                self._freeze_backbone(backbone)  # Freeze backbone 1
+                self._freeze_backbone(backbone)
             self.backbones.append(backbone)
 
-        # Set a sensible default fusion dim
-
-        self.backbone_out_dim = out_dim #self.backbones[0].num_features
-
-        if fusion_dim is None:
-            fusion_dim = min(512, self.backbone_out_dim)  # Keep dimension smaller for fusion stability
-
-        # Projection layers
+        # Project 8-class logits to fusion_dim
         self.projs = nn.ModuleList([
             nn.Sequential(
-                nn.Linear(self.backbone_out_dim, fusion_dim),
+                nn.Linear(self.backbone_num_classes, fusion_dim),
                 nn.LayerNorm(fusion_dim) if use_layernorm else nn.Identity(),
-                nn.ReLU()
-            )
-            for _ in range(self.num_modalities)
+                nn.GELU()
+            ) for _ in range(self.num_modalities)
         ])
 
-        # Fusion attention
-        self.attn_fusion = AttentionFusion(embed_dim=fusion_dim, num_modalities=self.num_modalities)
+        # Transformer-based attention fusion
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=fusion_dim, nhead=4, dim_feedforward=2*fusion_dim, dropout=0.1, batch_first=True
+        )
+        self.fusion_transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
 
-        # Deeper classifier for richer features
+        # Final classifier
         self.classifier = nn.Sequential(
-            nn.Linear(fusion_dim, 256),
+            nn.Linear(fusion_dim, 128),
             nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(0.2),
             nn.Linear(128, out_dim)
         )
+
     def _load_backbone_weights(self, model, checkpoint_path):
         try:
             state_dict = torch.load(checkpoint_path, map_location='cpu')
             if 'state_dict' in state_dict:
-                state_dict = state_dict['state_dict']  # For checkpoints saved with torch.save({"state_dict": model.state_dict()})
-            # Remove any 'module.' prefix if the model was saved using DataParallel
-            new_state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
-            model.load_state_dict(new_state_dict, strict=False)
+                state_dict = state_dict['state_dict']
+            state_dict = {k.replace('module.', ''): v for k, v in state_dict.items()}
+            model.load_state_dict(state_dict, strict=False)
             print(f"[INFO] Loaded checkpoint from {checkpoint_path}")
         except Exception as e:
-            print(f"[ERROR] Failed to load checkpoint from {checkpoint_path}: {e}")
+            print(f"[ERROR] Failed to load weights from {checkpoint_path}: {e}")
+
     def _freeze_backbone(self, model):
         for param in model.parameters():
             param.requires_grad = False
-        print("[INFO] Backbone 1 frozen (no gradient updates).")
+        print("[INFO] Backbone 1 frozen.")
 
-    def forward(self, imgs):  # imgs: list of 3 tensors
+    def forward(self, imgs):  # imgs: list of 3 modality tensors
         B = imgs[0].shape[0]
         device = imgs[0].device
-
         fused_feats = []
+
         for i in range(self.num_modalities):
             x = imgs[i]
+            if x.shape[1] == 1:
+                x = x.repeat(1, 3, 1, 1)
 
-            # Modality dropout
+            # Random modality dropout (optional)
             if self.training and random.random() < self.dropout_prob and i != 0:
                 fused_feats.append(torch.zeros(B, self.projs[i][0].out_features, device=device))
                 continue
 
-            # Convert grayscale to RGB
-            if x.shape[1] == 1:
-                x = x.repeat(1, 3, 1, 1)
-
-            feat = self.backbones[i](x)  # (B, backbone_out_dim)
-            proj_feat = self.projs[i](feat)  # (B, fusion_dim)
+            logits = self.backbones[i](x)  # Output shape: (B, 8)
+            proj_feat = self.projs[i](logits)  # Project to fusion_dim
             fused_feats.append(proj_feat)
 
-        fused_stack = torch.stack(fused_feats, dim=1)  # (B, M, fusion_dim)
-        fused_output = self.attn_fusion(fused_stack)   # (B, fusion_dim)
-        out = self.classifier(fused_output)            # (B, out_dim)
-        return out
+        fused_stack = torch.stack(fused_feats, dim=1)  # Shape: (B, M, fusion_dim)
+        fused_output = self.fusion_transformer(fused_stack)  # Shape: (B, M, fusion_dim)
 
+        # Aggregate over modalities
+        fused_final = fused_output.mean(dim=1)  # (B, fusion_dim)
+        out = self.classifier(fused_final)      # (B, out_dim)
+        return out
 
 class MultiClassificationTorch(nn.Module): 
     def __init__(self, input_dim=64, num_classes=8, radiomics=False, radiomics_dim=463, 
@@ -239,7 +330,7 @@ class MultiClassificationTorch(nn.Module):
         for p in self.sdf_model.parameters(): 
             p.requires_grad = False
 
-        self.fusion_model = MultiModalCancerClassifierWithAttention(out_dim=num_classes, backbone_name= "resnet50", dropout_prob= 0)
+        self.fusion_model = MultiModalClassifierWithLogitFusion(out_dim=num_classes, backbone_name= "resnet50", dropout_prob= 0)
 
         # Losses for multi-label (use BCE with logits)
         #self.loss_fn = nn.BCEWithLogitsLoss()
