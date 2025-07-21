@@ -237,9 +237,9 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
 
         # Checkpoint paths per modality
         self.checkpoints = [
-            "checkpoints/imagenet_model_mmotu/modality1/best_model.pth",
-            "checkpoints/imagenet_model_mmotu/modality2/best_model.pth",
-            "checkpoints/imagenet_model_mmotu/modality3/best_model.pth"
+            "checkpoints/imagenet_model_mmotu/1548ce4/best_model.pth",
+            "checkpoints/imagenet_model_mmotu/1548ce4/best_model.pth",
+            "checkpoints/imagenet_model_mmotu/1548ce4/best_model.pth"
         ]
 
         self.backbones = nn.ModuleList()
