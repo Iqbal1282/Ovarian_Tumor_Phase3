@@ -250,27 +250,27 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
                 self._freeze_backbone(backbone)
             self.backbones.append(backbone)
 
-        # Project 8-class logits to fusion_dim
-        self.projs = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(self.backbone_num_classes, fusion_dim),
-                nn.LayerNorm(fusion_dim) if use_layernorm else nn.Identity(),
-                nn.GELU()
-            ) for _ in range(self.num_modalities)
-        ])
+        # # Project 8-class logits to fusion_dim
+        # self.projs = nn.ModuleList([
+        #     nn.Sequential(
+        #         nn.Linear(self.backbone_num_classes, fusion_dim),
+        #         nn.LayerNorm(fusion_dim) if use_layernorm else nn.Identity(),
+        #         nn.GELU()
+        #     ) for _ in range(self.num_modalities)
+        # ])
 
-        # Transformer-based attention fusion
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=fusion_dim, nhead=4, dim_feedforward=2*fusion_dim, dropout=0.1, batch_first=True
-        )
-        self.fusion_transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
+        # # Transformer-based attention fusion
+        # encoder_layer = nn.TransformerEncoderLayer(
+        #     d_model=fusion_dim, nhead=4, dim_feedforward=2*fusion_dim, dropout=0.1, batch_first=True
+        # )
+        # self.fusion_transformer = nn.TransformerEncoder(encoder_layer, num_layers=1)
 
         # Final classifier
         self.classifier = nn.Sequential(
-            nn.Linear(fusion_dim, 128),
+            nn.Linear(24,  12),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(128, out_dim)
+            nn.Linear(12, out_dim)
         )
 
     def _load_backbone_weights(self, model, checkpoint_path):
@@ -305,15 +305,15 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
                 continue
 
             logits = self.backbones[i](x)  # Output shape: (B, 8)
-            proj_feat = self.projs[i](logits)  # Project to fusion_dim
-            fused_feats.append(proj_feat)
+            #proj_feat = self.projs[i](logits)  # Project to fusion_dim
+            fused_feats.append(logits)
 
-        fused_stack = torch.stack(fused_feats, dim=1)  # Shape: (B, M, fusion_dim)
-        fused_output = self.fusion_transformer(fused_stack)  # Shape: (B, M, fusion_dim)
+        fused_stack = torch.cat(fused_feats, dim=-1)  # Shape: (B, M, fusion_dim)
+        #fused_output = self.fusion_transformer(fused_stack)  # Shape: (B, M, fusion_dim)
 
         # Aggregate over modalities
-        fused_final = fused_output.mean(dim=1)  # (B, fusion_dim)
-        out = self.classifier(fused_final)      # (B, out_dim)
+        #fused_final = fused_output.mean(dim=1)  # (B, fusion_dim)
+        out = self.classifier(fused_stack)      # (B, out_dim)
         return out
 
 class MultiClassificationTorch(nn.Module): 
