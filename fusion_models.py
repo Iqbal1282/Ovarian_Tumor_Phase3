@@ -247,7 +247,7 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
             backbone = timm.create_model(backbone_name, pretrained=False, num_classes=self.backbone_num_classes)
             self._load_backbone_weights(backbone, self.checkpoints[i])
             #if i == 0:
-            self._freeze_backbone(backbone)
+            #self._freeze_backbone(backbone)
             self.backbones.append(backbone)
 
         # Project 8-class logits to fusion_dim
