@@ -246,8 +246,8 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
         for i in range(self.num_modalities):
             backbone = timm.create_model(backbone_name, pretrained=False, num_classes=self.backbone_num_classes)
             self._load_backbone_weights(backbone, self.checkpoints[i])
-            #if i == 0:
-            #self._freeze_backbone(backbone)
+            if i == 0:
+                self._freeze_backbone(backbone)
             self.backbones.append(backbone)
 
         # Project 8-class logits to fusion_dim
@@ -333,8 +333,8 @@ class MultiClassificationTorch(nn.Module):
         self.fusion_model = MultiModalClassifierWithLogitFusion(out_dim=num_classes, backbone_name= "resnet50", dropout_prob= 0)
 
         # Losses for multi-label (use BCE with logits)
-        self.loss_fn = nn.BCEWithLogitsLoss()
-        self.loss_fn2 = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([3.0] * num_classes))
+        #self.loss_fn = nn.BCEWithLogitsLoss()
+        self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.0] * num_classes))
 
     def normalize_sdf(self, sdf_image):
         sdf_image = (sdf_image - sdf_image.min()) / (sdf_image.max() - sdf_image.min() + 1e-8)
@@ -365,7 +365,7 @@ class MultiClassificationTorch(nn.Module):
             loss = self.loss_fn(score, y) + sum(self.loss_fn(t, y) for t in tails)
         else:
             score = self.forward(x)
-            loss = self.loss_fn(score, y) + 0.5 * self.loss_fn2(score, y)
+            loss = self.loss_fn(score, y) #+ 0.5 * self.loss_fn2(score, y)
 
         return loss
 
