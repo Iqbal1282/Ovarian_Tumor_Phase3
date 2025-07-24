@@ -246,8 +246,8 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
         for i in range(self.num_modalities):
             backbone = timm.create_model(backbone_name, pretrained=False, num_classes=self.backbone_num_classes)
             self._load_backbone_weights(backbone, self.checkpoints[i])
-            if i == 0:
-                self._freeze_backbone(backbone)
+            #if i == 0:
+            #    self._freeze_backbone(backbone)
             self.backbones.append(backbone)
 
         # Project 8-class logits to fusion_dim
@@ -293,6 +293,7 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
         B = imgs[0].shape[0]
         device = imgs[0].device
         fused_feats = []
+        logits_list = []
 
         for i in range(self.num_modalities):
             x = imgs[i]
@@ -305,6 +306,7 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
                 continue
 
             logits = self.backbones[i](x)  # Output shape: (B, 8)
+            logits_list.append(logits)
             proj_feat = self.projs[i](logits)  # Project to fusion_dim
             fused_feats.append(proj_feat)
 
@@ -314,7 +316,7 @@ class MultiModalClassifierWithLogitFusion(nn.Module):
         # Aggregate over modalities
         fused_final = fused_output.mean(dim=1)  # (B, fusion_dim)
         out = self.classifier(fused_final)      # (B, out_dim)
-        return out
+        return out, logits_list
 
 class MultiClassificationTorch(nn.Module): 
     def __init__(self, input_dim=64, num_classes=8, radiomics=False, radiomics_dim=463, 
@@ -344,7 +346,7 @@ class MultiClassificationTorch(nn.Module):
         x_sdf = self.sdf_model(x.mean(dim = 1, keepdim = True))
         x_sdf = self.normalize_sdf(x_sdf)
 
-        lower_thresh = torch.empty(1).uniform_(-0.7, -0.6).item()
+        lower_thresh = torch.empty(1).uniform_(-0.8, -0.75).item()
         upper_thresh = torch.empty(1).uniform_(0.35, 0.45).item()
         center_thresh = torch.empty(1).uniform_(0.1, 0.25).item()
 
@@ -354,9 +356,9 @@ class MultiClassificationTorch(nn.Module):
         x3 = x * boundary_mask
         x4 = x * center_mask
 
-        output = self.fusion_model([x, x3, x4])  # Output: (B, num_classes)
+        output, auxiliary_heads = self.fusion_model([x, x3, x4])  # Output: (B, num_classes)
 
-        return output
+        return output, auxiliary_heads 
 
     def compute_loss(self, x, y, x2_rad=None):
         y = y.float()  # Ensure targets are float for BCE loss
@@ -364,8 +366,11 @@ class MultiClassificationTorch(nn.Module):
             score, tails = self.forward(x, x2_rad)
             loss = self.loss_fn(score, y) + sum(self.loss_fn(t, y) for t in tails)
         else:
-            score = self.forward(x)
+            score, aux_outs = self.forward(x)
             loss = self.loss_fn(score, y) #+ 0.5 * self.loss_fn2(score, y)
+
+            for aux_out in aux_outs:
+                loss += self.loss_fn(aux_out, y) * 0.1 #aux_loss_weight
 
         return loss
 
@@ -384,7 +389,7 @@ class MultiClassificationTorch(nn.Module):
                 else:
                     x, x2, y = batch
                     x, x2, y = x.to(device), x2.to(device), y.to(device)
-                    scores = self.forward(x, x2)
+                    scores,_ = self.forward(x, x2)
 
                 probs = torch.sigmoid(scores)
                 all_probs.append(probs.cpu())
@@ -467,7 +472,7 @@ class BinaryClassificationTorch(nn.Module):
 
         lower_thresh = torch.empty(1).uniform_(-0.45, -0.15).item()
         upper_thresh = torch.empty(1).uniform_(0.35, 0.65).item()
-        center_thresh = torch.empty(1).uniform_(0.1, 0.25).item()
+        center_thresh = torch.empty(1).uniform_(0.3, 0.35).item()
 
         boundary_mask = (x_sdf < upper_thresh) & (x_sdf > lower_thresh)
         center_mask = (x_sdf < center_thresh)
