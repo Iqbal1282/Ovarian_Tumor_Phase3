@@ -17,6 +17,8 @@ from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 
 import warnings
 warnings.filterwarnings("ignore")
+import os
+os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
 
 
 
@@ -29,6 +31,7 @@ def main():
     batch_size = 12
     num_classes = 8
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    num_workers = 2
 
     # Git Info
     try:
@@ -59,8 +62,8 @@ def main():
     train_dataset =  MMotu_Classificaiton_Dataset(phase='train') # , radiomics_dir=False)
     val_dataset =  MMotu_Classificaiton_Dataset(phase='val') #, radiomics_dir=False)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4, drop_last=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, drop_last=False)
 
 
     # Model
