@@ -385,7 +385,7 @@ class MultiClassificationTorch(nn.Module):
                 if len(batch) == 2:
                     x, y = batch
                     x, y = x.to(device), y.to(device)
-                    scores = self.forward(x)
+                    scores, _ = self.forward(x)
                 else:
                     x, x2, y = batch
                     x, x2, y = x.to(device), x2.to(device), y.to(device)
