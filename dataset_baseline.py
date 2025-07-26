@@ -28,6 +28,11 @@ from PIL import Image
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+import warnings
+warnings.filterwarnings("ignore")
+import os
+os.environ["NO_ALBUMENTATIONS_UPDATE"] = "1"
+
 
 
 # train_transform = A.Compose([
