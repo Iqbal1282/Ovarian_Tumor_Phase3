@@ -31,7 +31,7 @@ def main():
     batch_size = 12
     num_classes = 8
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    num_workers = 4
+    num_workers = 2
 
     # Git Info
     try:

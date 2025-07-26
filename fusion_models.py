@@ -370,7 +370,7 @@ class MultiClassificationTorch(nn.Module):
             loss = self.loss_fn(score, y) #+ 0.5 * self.loss_fn2(score, y)
 
             for aux_out in aux_outs:
-                loss += self.loss_fn(aux_out, y) * 0.5 #aux_loss_weight
+                loss += self.loss_fn(aux_out, y)  #aux_loss_weight
 
         return loss
 
