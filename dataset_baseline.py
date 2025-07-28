@@ -77,7 +77,7 @@ from albumentations.pytorch import ToTensorV2
 
 train_transform = A.Compose([
     A.Resize(height=448, width=448, p = 1),  # matches img_scale=(448, 448)
-    #A.ElasticTransform(alpha = 1, sigma = 250, p=0.5),
+    A.ElasticTransform(alpha = 1, sigma = 250, p=0.5),
     A.GridDistortion(distort_limit=(-0.1,0.1), p=0.5),
     #A.ShiftScaleRotate(shift_limit=(-0.005,0.005), scale_limit=(-0.2, 0.005), rotate_limit=(-30,30), border_mode=0, value=0, p=0.6),
 
@@ -101,10 +101,10 @@ train_transform = A.Compose([
     A.HorizontalFlip(p=0.5),
 
     # Photometric distortion
-    A.OneOf([
-        A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-        A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.5),
-    ], p=1.0),
+    # A.OneOf([
+    #     A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+    #     A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=10, val_shift_limit=10, p=0.5),
+    # ], p=1.0),
 
     # Normalization (match mmseg style)
     A.Normalize(
