@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import roc_curve, auc
 from torch.utils.data import DataLoader
 from fusion_models import MultiClassificationTorch_Imagenet
-from dataset_baseline import  MMotu_Classificaiton_Dataset
+from dataset_baseline2 import  MMotu_Classificaiton_Dataset
 from utils import plot_roc_curve_multilabel, compute_weighted_accuracy
 from tqdm import tqdm
 from torchmetrics.classification import MultilabelAccuracy, MultilabelAUROC
@@ -58,7 +58,7 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
 # Model
-model = MultiClassificationTorch_Imagenet(backbone_name= 'coatnet_0').to(device=device)
+model = MultiClassificationTorch_Imagenet(backbone_name= 'coatnet_2_rw_224', pretrained= False).to(device=device)
 
 # optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
 # #optimizer = torch.optim.SGD(model.parameters(), lr=5e-4, weight_decay=5e-4, momentum=0.9)

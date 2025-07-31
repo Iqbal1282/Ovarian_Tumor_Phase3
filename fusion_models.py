@@ -401,7 +401,7 @@ class MultiClassificationTorch_Imagenet(nn.Module):
     def __init__(self, num_classes=8, backbone_name = 'coatnet_0', pretrained=True):
         super().__init__()
         self.num_classes = num_classes
-        self.backbone = timm.create_model(backbone_name, pretrained=True, num_classes=8)
+        self.backbone = timm.create_model(backbone_name, pretrained=pretrained, num_classes=8)
         self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.0] * num_classes))
 
     def forward(self, x, x2_radiomics=None):
