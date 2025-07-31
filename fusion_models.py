@@ -398,7 +398,7 @@ class MultiClassificationTorch(nn.Module):
         return torch.cat(all_targets).numpy(), torch.cat(all_probs).numpy()
     
 class MultiClassificationTorch_Imagenet(nn.Module): 
-    def __init__(self, num_classes=8, backbone_name = 'resnet50'):
+    def __init__(self, num_classes=8, backbone_name = 'coatnet_0', pretrained=True):
         super().__init__()
         self.num_classes = num_classes
         self.backbone = timm.create_model(backbone_name, pretrained=True, num_classes=8)

@@ -58,7 +58,7 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
 # Model
-model = MultiClassificationTorch_Imagenet().to(device=device)
+model = MultiClassificationTorch_Imagenet(backbone_name= 'coatnet_0').to(device=device)
 
 # optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
 # #optimizer = torch.optim.SGD(model.parameters(), lr=5e-4, weight_decay=5e-4, momentum=0.9)
