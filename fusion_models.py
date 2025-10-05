@@ -23,6 +23,7 @@ import torchmetrics
 from torchmetrics.classification import MulticlassAccuracy, MulticlassAUROC
 from torchvision.models import resnet18 , ResNet18_Weights
 import torchvision 
+from us_models import ThreeModalTransformerClassifier
 
 
 import torch.nn as nn
@@ -320,6 +321,58 @@ class MultiClassificationTorch_Imagenet(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.backbone = timm.create_model(backbone_name, pretrained=True, num_classes=8)
+        self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.0] * num_classes))
+
+    def forward(self, x, x2_radiomics=None):
+        x = self.backbone(x)
+        return x
+
+    def compute_loss(self, x, y, x2_rad=None):
+        y = y.float()  # Ensure targets are float for BCE loss
+        if x2_rad is not None:
+            score, tails = self.forward(x, x2_rad)
+            loss = self.loss_fn(score, y) + sum(self.loss_fn(t, y) for t in tails)
+        else:
+            score = self.forward(x)
+            loss = self.loss_fn(score, y) #+ 0.5 * self.loss_fn2(score, y)
+
+        return loss
+
+    def predict_on_loader(self, dataloader, threshold=0.5):
+        self.eval()
+        all_probs, all_targets = [], []
+
+        device = next(self.parameters()).device
+
+        with torch.no_grad():
+            for batch in dataloader:
+                if len(batch) == 2:
+                    x, y = batch
+                    x, y = x.to(device), y.to(device)
+                    scores = self.forward(x)
+                else:
+                    x, x2, y = batch
+                    x, x2, y = x.to(device), x2.to(device), y.to(device)
+                    scores = self.forward(x, x2)
+
+                probs = torch.sigmoid(scores)
+                all_probs.append(probs.cpu())
+                all_targets.append(y.cpu())
+
+        return torch.cat(all_targets).numpy(), torch.cat(all_probs).numpy()
+    
+
+class MultiClassificationTorch_Imagenet_replaced_transformer(nn.Module): 
+    def __init__(self, num_classes=8, backbone_name = 'resnet50'):
+        super().__init__()
+        self.num_classes = num_classes
+        #self.backbone = timm.create_model(backbone_name, pretrained=True, num_classes=8)
+        img_size=448
+        patch_size=32
+        embed_dim=256
+        num_heads=4
+        num_layers=6
+        self.backbone = ThreeModalTransformerClassifier(img_size=img_size, patch_size=patch_size, embed_dim=embed_dim, num_heads=num_heads, num_layers=num_layers, num_classes=num_classes, dropout = 0.1, common_root_patcher = True)
         self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.0] * num_classes))
 
     def forward(self, x, x2_radiomics=None):
