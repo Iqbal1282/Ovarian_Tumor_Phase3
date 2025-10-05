@@ -376,6 +376,7 @@ class MultiClassificationTorch_Imagenet_replaced_transformer(nn.Module):
         self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([2.0] * num_classes))
 
     def forward(self, x, x2_radiomics=None):
+        x = x.mean(dim = 1, keepdim = True)
         x = self.backbone(x)
         return x
 

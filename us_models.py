@@ -355,7 +355,7 @@ class ThreeModalTransformerClassifier(nn.Module):
             logits = self.head(cls_output)
             return cls_output, logits
         
-        return self.head(cls_output).squeeze()
+        return self.head(cls_output) #.squeeze()
     
     def compute_loss(self, x, y, x2_rad=None):
         y = y.float()  # Ensure targets are float for BCE loss
@@ -404,14 +404,14 @@ if __name__ == "__main__":
 
     output = model([img1, img2, img3]) #, img4])  # shape: (8,)
 
-    print(output)
+    print(output.shape)
 
 
 
-    model = BinaryClassificationTorch(input_dim= 64, num_classes= 1,  
-                                 encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt", 
-                                 sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84",
-                                 radiomics= False)
-    print(model)
-    model.eval()
-    print(model(torch.randn(1, 1,256, 256))) #, torch.randn(1, 1,256, 256)).shape)
+    # model = BinaryClassificationTorch(input_dim= 64, num_classes= 1,  
+    #                              encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt", 
+    #                              sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84",
+    #                              radiomics= False)
+    # print(model)
+    # model.eval()
+    # print(model(torch.randn(1, 1,256, 256))) #, torch.randn(1, 1,256, 256)).shape)
