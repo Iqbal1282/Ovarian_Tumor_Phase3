@@ -371,7 +371,7 @@ class MultiClassificationTorch_Imagenet_replaced_transformer(nn.Module):
         patch_size=32
         embed_dim=256
         num_heads=4
-        num_layers=6
+        num_layers=10
         self.backbone = ThreeModalTransformerClassifier(img_size=img_size, patch_size=patch_size, embed_dim=embed_dim, num_heads=num_heads, num_layers=num_layers, num_classes=num_classes, dropout = 0.1, common_root_patcher = True)
         self.loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([5.0] * num_classes))
 
