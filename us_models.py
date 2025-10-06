@@ -261,7 +261,7 @@ class ThreeModalTransformerClassifier(nn.Module):
         super().__init__()
 
         self.sdf_model = SDFModel()
-        sdf_model_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt" #r"../../codebase/codebase_washu2_PA_US_combined\checkpoints\sdf_model\epoch_84"
+        sdf_model_path = r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84" #r"../../codebase/codebase_washu2_PA_US_combined\checkpoints\sdf_model\epoch_84"
         self.sdf_model.load_state_dict(torch.load(sdf_model_path))
         for p in self.sdf_model.parameters(): p.requires_grad = False
 
