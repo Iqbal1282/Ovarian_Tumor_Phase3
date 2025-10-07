@@ -273,9 +273,17 @@ class ThreeModalTransformerClassifier(nn.Module):
             self.common_patcher = PatchEmbed(img_size=img_size, patch_size=patch_size, in_chans=1, embed_dim=embed_dim)
         else: 
             # Modality-specific CNNs (or lightweight ViTs if pretrained available)
-            self.so2_cnn = nn.Conv2d(1, embed_dim, kernel_size=patch_size, stride=patch_size)
-            self.thb_cnn = nn.Conv2d(1, embed_dim, kernel_size=patch_size, stride=patch_size)
-            self.us_cnn  = nn.Conv2d(1, embed_dim, kernel_size=patch_size, stride=patch_size)
+            self.so2_cnn = nn.Sequential(nn.Conv2d(1, embed_dim, kernel_size=patch_size, stride=patch_size),
+                                        nn.Conv2d(embed_dim, embed_dim, kernel_size=1, stride=1),
+                                        nn.Conv2d(embed_dim, embed_dim, kernel_size=1, stride=1)) 
+            
+            self.thb_cnn = nn.Sequential(nn.Conv2d(1, embed_dim, kernel_size=patch_size, stride=patch_size), 
+                                        nn.Conv2d(embed_dim, embed_dim, kernel_size=1, stride=1),
+                                        nn.Conv2d(embed_dim, embed_dim, kernel_size=1, stride=1))
+            
+            self.us_cnn  = nn.Sequential(nn.Conv2d(1, embed_dim, kernel_size=patch_size, stride=patch_size), 
+                                        nn.Conv2d(embed_dim, embed_dim, kernel_size=1, stride=1),
+                                        nn.Conv2d(embed_dim, embed_dim, kernel_size=1, stride=1))
         
         # CLS token (shared)
         self.cls_token = nn.Parameter(torch.randn(1, 1, embed_dim))

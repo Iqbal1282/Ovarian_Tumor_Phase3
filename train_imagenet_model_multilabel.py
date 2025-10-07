@@ -63,7 +63,7 @@ model = MultiClassificationTorch_Imagenet_replaced_transformer().to(device=devic
 # optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
 # #optimizer = torch.optim.SGD(model.parameters(), lr=5e-4, weight_decay=5e-4, momentum=0.9)
 # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
-optimizer = torch.optim.SGD(model.parameters(),  lr=0.001, momentum=0.9, weight_decay=0.0005)
+optimizer = torch.optim.SGD(model.parameters(),  lr=0.01, momentum=0.9, weight_decay=0.0005)
 scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-5)
 # accuracy_metric = MultilabelAccuracy(num_labels=num_classes).to(device)
 # auc_metric = MultilabelAUROC(num_labels=num_classes).to(device)
