@@ -71,7 +71,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 train_transform = A.Compose([
-    A.Resize(height=448, width=448, always_apply=True),  # matches img_scale=(448, 448)
+    A.Resize(height=456, width=456, always_apply=True),  # matches img_scale=(448, 448)
     A.ShiftScaleRotate(shift_limit=(-0.005,0.005), scale_limit=(-0.2, 0.005), rotate_limit=(-30,30), border_mode=0, value=0, p=0.6),
     
     # Mimic Random Resize with ratio_range (0.5–2.0)
