@@ -51,7 +51,7 @@ train_config = {
 run = wandb.init(project=project_title, name=experiment_name, config=train_config)
 
 # Dataset and DataLoader
-train_dataset =  MMotu_Classificaiton_Dataset(phase='train') # , radiomics_dir=False)
+train_dataset =  MMotu_Classificaiton_Dataset(phase='train') # , radiomics_dir=False)  
 val_dataset =  MMotu_Classificaiton_Dataset(phase='val') #, radiomics_dir=False)
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -63,10 +63,10 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 #model = MultiClassificationTorch_Imagenet_replaced_transformer().to(device=device)
 model = ThreeModalTransformerClassifier(num_classes= 8).to(device=device)
 
-# optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
+optimizer = torch.optim.AdamW(model.parameters(), lr=5e-4, weight_decay=1e-2)
 # #optimizer = torch.optim.SGD(model.parameters(), lr=5e-4, weight_decay=5e-4, momentum=0.9)
 # scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
-optimizer = torch.optim.SGD(model.parameters(),  lr=0.0001, momentum=0.9, weight_decay=0.0005)
+#optimizer = torch.optim.SGD(model.parameters(),  lr=0.0001, momentum=0.9, weight_decay=0.0005)
 scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=1e-6)
 # accuracy_metric = MultilabelAccuracy(num_labels=num_classes).to(device)
 # auc_metric = MultilabelAUROC(num_labels=num_classes).to(device)
