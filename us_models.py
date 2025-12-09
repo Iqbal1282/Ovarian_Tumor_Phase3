@@ -261,7 +261,7 @@ class ThreeModalTransformerClassifier(nn.Module):
         super().__init__()
 
         self.sdf_model = SDFModel()
-        sdf_model_path = r"../../codebase/codebase_washu2_PA_US_combined\checkpoints\sdf_model\epoch_84"
+        sdf_model_path = r"./checkpoints\sdf_model\epoch_84"
         self.sdf_model.load_state_dict(torch.load(sdf_model_path))
         for p in self.sdf_model.parameters(): p.requires_grad = False
 
@@ -406,22 +406,31 @@ class ThreeModalTransformerClassifier(nn.Module):
         return sdf_image * 2 - 1
 
 if __name__ == "__main__":
-    model = MultiModalCancerClassifierWithAttention()
-    img1 = torch.randn(8, 1, 256, 256)
-    img2 = torch.randn(8, 1, 256, 256)
-    img3 = torch.randn(8, 1, 256, 256)
-    img4 = torch.randn(8, 1, 256, 256)
+    # model = MultiModalCancerClassifierWithAttention()
+    # img1 = torch.randn(8, 1, 256, 256)
+    # img2 = torch.randn(8, 1, 256, 256)
+    # img3 = torch.randn(8, 1, 256, 256)
+    # img4 = torch.randn(8, 1, 256, 256)
 
-    output = model([img1, img2, img3]) #, img4])  # shape: (8,)
+    # output = model([img1, img2, img3]) #, img4])  # shape: (8,)
 
-    print(output.shape)
+    # print(output.shape)
 
 
 
-    # model = BinaryClassificationTorch(input_dim= 64, num_classes= 1,  
-    #                              encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt", 
-    #                              sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84",
-    #                              radiomics= False)
-    # print(model)
-    # model.eval()
-    # print(model(torch.randn(1, 1,256, 256))) #, torch.randn(1, 1,256, 256)).shape)
+    # # model = BinaryClassificationTorch(input_dim= 64, num_classes= 1,  
+    # #                              encoder_weight_path = r"checkpoints\normtverskyloss_binary_segmentation\a56e77a\best-checkpoint-epoch=77-validation\loss=0.2544.ckpt", 
+    # #                              sdf_model_path= r"checkpoints\deeplabv3_sdf_randomcrop\model_20250711_201243\epoch_84",
+    # #                              radiomics= False)
+    # # print(model)
+    # # model.eval()
+    # # print(model(torch.randn(1, 1,256, 256))) #, torch.randn(1, 1,256, 256)).shape)
+
+    model = ThreeModalTransformerClassifier(num_classes=5)
+
+    x = torch.randn(2, 1, 448, 448)  # Example input
+
+    # During inference
+    logits = model(x)
+
+    print("Logits shape:", logits.shape)  # Shou
